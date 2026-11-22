@@ -92,3 +92,24 @@ def test_load_dataset_offline(tmp_path: Path) -> None:
     n_calls = len(fetch.calls)
     load_dataset("2015-01-01", "2016-12-30", cache_dir=tmp_path, fetch=fetch)
     assert len(fetch.calls) == n_calls
+
+
+def test_full_pipeline_offline(tmp_path: Path) -> None:
+    from momentum.backtest.strategy import (
+        StrategyConfig,
+        buy_and_hold,
+        run_equal_weight_universe,
+        run_momentum,
+    )
+
+    ds = load_dataset("2015-01-01", "2016-12-30", cache_dir=tmp_path, fetch=fake_yahoo())
+    config = StrategyConfig(top_n=20)
+    strat = run_momentum(ds, config)
+    universe = run_equal_weight_universe(ds, config)
+
+    assert strat.nav.index[0] == pd.Timestamp("2016-02-01")  # first signal Jan 2016, +1 day
+    assert (strat.trades["holdings"] == 20).all()
+    assert (universe.trades["holdings"] > 20).all()
+    assert (strat.cash.abs() < 1e-9).all()
+    assert not (strat.weights[["GOOG", "GOOGL"]] > 0).all(axis=1).any()
+    assert buy_and_hold(ds.benchmark, strat.nav.index[0]).iloc[0] == 1.0

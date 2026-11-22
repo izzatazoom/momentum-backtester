@@ -76,3 +76,31 @@ def format_picks(table: pd.DataFrame, signal: Signal, date: pd.Timestamp) -> str
         elif col == "score":
             fmt[col] = fmt[col].map("{:.2f}".format)
     return header + fmt.to_string()
+
+
+def summary_row(nav: pd.Series, trades: pd.DataFrame | None = None) -> dict[str, float]:
+    """Headline numbers for one value series. Stage-5 metrics build on these."""
+    from momentum.metrics.performance import cagr, max_drawdown, volatility, years
+
+    row = {
+        "final value": float(nav.iloc[-1] / nav.iloc[0]),
+        "CAGR": cagr(nav),
+        "volatility": volatility(nav),
+        "max drawdown": max_drawdown(nav),
+        "turnover / rebalance": float("nan"),
+        "costs / year": float("nan"),
+    }
+    if trades is not None and len(trades):
+        row["turnover / rebalance"] = float(trades["turnover"].mean())
+        row["costs / year"] = float(trades["cost"].sum() / years(nav))
+    return row
+
+
+def format_summary(table: pd.DataFrame) -> str:
+    fmt = table.copy().astype(object)
+    for col in table.columns:
+        spec = "{:.2f}x" if col == "final value" else "{:.1%}"
+        if col == "costs / year":
+            spec = "{:.2%}"
+        fmt[col] = [("-" if pd.isna(v) else spec.format(v)) for v in table[col]]
+    return fmt.to_string()

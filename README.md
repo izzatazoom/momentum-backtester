@@ -16,6 +16,8 @@ pytest
 python -m momentum data         # download prices once, then print a data quality report
 python -m momentum signal --date 2020-12          # top 20 picks on a month-end
 python -m momentum signal --date 2020-12 --risk-adjusted
+python -m momentum backtest --cost-sweep          # strategy vs benchmarks, 0-50 bps costs
+python -m momentum backtest --vol-cost --save output/backtest.csv
 ```
 
 ## Signal
@@ -33,6 +35,23 @@ date, priced that day and 12 months earlier, and priced on at least 90% of the
 trading days in between. Only one share class per company is held (GOOGL, not
 GOOGL and GOOG). The top 20 are held in equal weights. Ties go to the alphabetically
 first ticker.
+
+## Backtest engine
+
+Daily accounting with monthly rebalancing:
+
+- Signals use the month-end close. Trades fill at the next trading day's close.
+- Holdings drift with prices between rebalances. Turnover is measured against the
+  drifted weights: `turnover = 1/2 * sum |target - current| / portfolio value`.
+- Costs are charged on every dollar bought or sold: 10 bps flat by default, or
+  `5 bps + 0.05 * daily volatility` per stock with `--vol-cost`. The trade and its
+  cost are solved together, so the portfolio is fully invested *after* paying.
+- A stock that stops trading is sold at its last price and the money is held in
+  cash, which earns the 13-week T-bill rate. The portfolio never borrows.
+
+Two benchmarks run over the same dates: QQQ bought and held, and an equal-weight
+portfolio of every eligible Nasdaq-100 member with the same lag and costs. The
+second shows what momentum *selection* adds beyond holding the index equally.
 
 ## Data
 

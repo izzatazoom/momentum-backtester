@@ -19,6 +19,7 @@ Every value at ``t`` uses prices dated ``t`` or earlier.
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass
 
 import numpy as np
@@ -97,7 +98,8 @@ def window_stats(
         cov[i] = np.isfinite(values[lo:hi]).mean(axis=0)
         window = daily_ret[lo:hi]
         n = np.isfinite(window).sum(axis=0)
-        with np.errstate(invalid="ignore", divide="ignore"):
+        with warnings.catch_warnings():  # all-NaN columns are expected (unlisted stocks)
+            warnings.simplefilter("ignore", RuntimeWarning)
             sd = np.nanstd(window, axis=0, ddof=1)
         vol[i] = np.where(n >= 2, sd * np.sqrt(TRADING_DAYS), np.nan)
     return (
