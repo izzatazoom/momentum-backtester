@@ -36,6 +36,11 @@ def load_yahoo_symbols(path: Path = UNIVERSE_DIR / "yahoo_symbols.csv") -> dict[
     return dict(zip(table["ticker"], table["yahoo"], strict=True))
 
 
+def load_share_classes(path: Path = UNIVERSE_DIR / "share_classes.csv") -> pd.DataFrame:
+    """Columns ``company``, ``ticker``, ``priority`` (1 = preferred class)."""
+    return pd.read_csv(path, dtype={"company": str, "ticker": str, "priority": int})
+
+
 def load_changes(
     path: Path = UNIVERSE_DIR / "nasdaq100_changes.csv",
     corrections: Path | None = UNIVERSE_DIR / "corrections.csv",

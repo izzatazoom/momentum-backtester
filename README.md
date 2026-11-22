@@ -14,7 +14,25 @@ python -m venv .venv
 pip install -e ".[dev]"
 pytest
 python -m momentum data         # download prices once, then print a data quality report
+python -m momentum signal --date 2020-12          # top 20 picks on a month-end
+python -m momentum signal --date 2020-12 --risk-adjusted
 ```
+
+## Signal
+
+On the last trading day of each month, every eligible stock gets a 12-1 momentum score:
+
+```
+score = P(1 month ago) / P(12 months ago) - 1
+```
+
+The most recent month is skipped because one-month returns tend to reverse. The
+risk-adjusted variant divides the score by the annualised volatility of daily returns
+over the same window. A stock is eligible if it is an index member on the signal
+date, priced that day and 12 months earlier, and priced on at least 90% of the
+trading days in between. Only one share class per company is held (GOOGL, not
+GOOGL and GOOG). The top 20 are held in equal weights. Ties go to the alphabetically
+first ticker.
 
 ## Data
 

@@ -6,6 +6,7 @@
 | `nasdaq100_changes.csv` | Every index addition and removal since 2007 |
 | `corrections.csv` | Manual fixes applied on load, each with a note |
 | `yahoo_symbols.csv` | Index tickers whose price history Yahoo files under a newer symbol |
+| `share_classes.csv` | Companies with more than one listed class. Only the highest-priority eligible class can be held |
 
 The first two are parsed from Wikipedia ("List of Nasdaq-100 companies" and
 "Historical components of the Nasdaq-100", retrieved 2026-11-23) by
