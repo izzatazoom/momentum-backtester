@@ -1,0 +1,3 @@
+date,action,ticker,new_ticker,note
+2015-11-11,rename_removed,AVGO,BRCM,"Broadcom Corp (BRCM) left the index ahead of its merger with Avago; Wikipedia lists it under the merged company's ticker. Avago (AVGO) stayed in."
+2016-02-01,drop,AVGO,,"Avago renamed itself Broadcom and kept the AVGO ticker, so this is not a membership change."

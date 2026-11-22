@@ -13,7 +13,20 @@ python -m venv .venv
 .venv\Scripts\activate          # Windows  (macOS/Linux: source .venv/bin/activate)
 pip install -e ".[dev]"
 pytest
+python -m momentum data         # download prices once, then print a data quality report
 ```
+
+## Data
+
+- Universe: point-in-time Nasdaq-100 membership, rebuilt from the published history
+  of index changes ([data/universe](data/universe)). A 2016 rebalance can only pick
+  stocks that were in the index in 2016.
+- Prices: daily split- and dividend-adjusted closes from Yahoo Finance, cached in
+  `data/cache/` so every run uses the same data.
+- Benchmark: QQQ. Risk-free rate: 13-week T-bill yield (`^IRX`).
+- Known gap: Yahoo has no history for companies that were acquired or delisted.
+  About 12% of member-days can't be priced, which biases results upward. The
+  universe README lists the affected names.
 
 ## Project layout
 
