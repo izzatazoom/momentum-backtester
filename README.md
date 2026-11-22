@@ -18,6 +18,7 @@ python -m momentum signal --date 2020-12          # top 20 picks on a month-end
 python -m momentum signal --date 2020-12 --risk-adjusted
 python -m momentum backtest --cost-sweep          # strategy vs benchmarks, 0-50 bps costs
 python -m momentum backtest --vol-cost --save output/backtest.csv
+python -m momentum walkforward --save output      # choose settings on the past, test on the future
 ```
 
 ## Signal
@@ -52,6 +53,32 @@ Daily accounting with monthly rebalancing:
 Two benchmarks run over the same dates: QQQ bought and held, and an equal-weight
 portfolio of every eligible Nasdaq-100 member with the same lag and costs. The
 second shows what momentum *selection* adds beyond holding the index equally.
+
+## Walk-forward testing
+
+Settings are never chosen with hindsight. Every January:
+
+1. All 48 settings in a grid fixed in advance (lookback 3/6/9/12 months, skip 0/1,
+   hold 10/20/30 stocks, plain or risk-adjusted score) are scored on the training
+   months before that January. The expanding window starts in February 2016, with
+   a minimum of 35 months.
+2. Each setting's training Sharpe is averaged with its grid neighbours, and the
+   best smoothed score wins. A setting that only works on its own is treated as
+   noise.
+3. The winner trades for the next 12 months.
+
+The test years (2019 onwards) run as one continuous portfolio. Holdings carry over
+when the setting changes, and only the trades needed are made and paid for. A
+5-year rolling window is run alongside as a robustness check.
+
+Overfitting is measured two ways:
+
+- **In-sample vs out-of-sample Sharpe.** The training Sharpe of the chosen
+  settings (what the past promised) against what the next year delivered.
+- **Deflated Sharpe Ratio** (Bailey & Lopez de Prado, 2014). The probability that
+  the best of the 48 settings beats the Sharpe that luck alone would produce from
+  48 tries. It's computed against T-bills (does it make money?) and against QQQ
+  (does it beat the index?).
 
 ## Data
 

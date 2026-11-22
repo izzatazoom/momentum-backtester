@@ -43,6 +43,13 @@ def build_parser() -> argparse.ArgumentParser:
     bt.add_argument("--lag", type=int, default=1, help="days from signal to trade (default 1)")
     bt.add_argument("--cost-sweep", action="store_true", help="also show results at 0-50 bps")
     bt.add_argument("--save", type=Path, default=None, help="write daily values to this CSV")
+
+    wf = sub.add_parser("walkforward", help="choose settings on past data, test on the next year")
+    wf.add_argument("--window", choices=["expanding", "rolling"], default="expanding")
+    wf.add_argument("--no-smooth", action="store_true", help="pick by raw, not smoothed, Sharpe")
+    wf.add_argument("--cost-bps", type=float, default=10.0, help="flat cost per side (default 10)")
+    wf.add_argument("--vol-cost", action="store_true", help="volatility-scaled costs instead")
+    wf.add_argument("--save", type=Path, default=None, help="folder for CSV output")
     return parser
 
 
@@ -74,6 +81,9 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.command == "backtest":
         return _backtest(args)
+
+    if args.command == "walkforward":
+        return _walkforward(args)
 
     parser.print_help()
     return 0
@@ -133,6 +143,31 @@ def _backtest(args: argparse.Namespace) -> int:
         out = pd.DataFrame({"momentum": strat.nav, "equal_weight": universe_nav, "qqq": qqq})
         out.to_csv(args.save)
         print(f"\nDaily values written to {args.save}")
+    return 0
+
+
+def _walkforward(args: argparse.Namespace) -> int:
+    from momentum.backtest.walkforward import Grid, run_grid, walk_forward
+    from momentum.data.dataset import load_dataset
+    from momentum.portfolio.costs import CostModel, FlatCost, VolatilityCost
+    from momentum.reports.walkforward import comparison, format_report, yearly
+
+    ds = load_dataset()
+    cost: CostModel = VolatilityCost() if args.vol_cost else FlatCost(args.cost_bps)
+    grid = run_grid(ds, Grid().configs(cost))
+    smooth = not args.no_smooth
+    main_run = walk_forward(ds, grid, window=args.window, smooth=smooth)
+    other = "rolling" if args.window == "expanding" else "expanding"
+    check = walk_forward(ds, grid, window=other, smooth=smooth)
+    print(format_report(main_run, ds, check))
+
+    if args.save:
+        args.save.mkdir(parents=True, exist_ok=True)
+        main_run.oos.nav.to_csv(args.save / "walkforward_nav.csv")
+        yearly(main_run, ds).to_csv(args.save / "walkforward_years.csv")
+        comparison(main_run, ds).to_csv(args.save / "walkforward_comparison.csv")
+        grid.navs.to_csv(args.save / "grid_navs.csv")
+        print(f"\nCSV files written to {args.save}")
     return 0
 
 
